@@ -1,9 +1,26 @@
 require "httparty"
+require "openssl"
+require "base64"
+require "uri"
 require_relative "google_map_static_image/version"
 
 class GoogleMapStaticImage
   STATIC_MAP_URL = "https://maps.googleapis.com/maps/api/staticmap"
   VALID_MAP_TYPES = %w[roadmap satellite terrain hybrid].freeze
+
+  class Configuration
+    attr_accessor :signing_secret
+  end
+
+  class << self
+    def configuration
+      @configuration ||= Configuration.new
+    end
+
+    def configure
+      yield(configuration)
+    end
+  end
 
   class ApiError < StandardError
     attr_reader :status, :body
@@ -29,8 +46,36 @@ class GoogleMapStaticImage
     end
     query[:markers] = option[:markers].map { |val| val.join("|") }            unless option[:markers].nil?
 
-    response = HTTParty.get(STATIC_MAP_URL, query: query)
+    request = HTTParty::Request.new(Net::HTTP::Get, STATIC_MAP_URL, query: query)
+    url = request.uri.to_s
+
+    secret = option[:signing_secret] || GoogleMapStaticImage.configuration.signing_secret
+    if secret
+      url = sign_url(url, secret)
+    end
+
+    if option[:url_only]
+      return url
+    end
+
+    response = HTTParty.get(url)
     raise ApiError.new(response.code, response.body) unless response.code == 200
     response.parsed_response
+  end
+
+  private
+
+  def sign_url(url, secret)
+    decoded_key = decode_urlsafe_base64(secret)
+    uri = URI.parse(url)
+    path_and_query = uri.path + '?' + uri.query
+    digest = OpenSSL::HMAC.digest('sha1', decoded_key, path_and_query)
+    url + '&signature=' + Base64.urlsafe_encode64(digest)
+  end
+
+  def decode_urlsafe_base64(string)
+    str = string.tr('-_', '+/').gsub('=', '')
+    str = str.ljust((str.length + 3) / 4 * 4, '=')
+    Base64.decode64(str)
   end
 end

@@ -29,9 +29,19 @@ response = map.get_response(
   location: { lat: "48.8584", lng: "2.2945" },
   markers:  [["48.8584,2.2945"], ["48.8606,2.3376"]]
 )
+
+# Or to just get the URL without making a request:
+url = map.get_response(
+  "YOUR_GOOGLE_API_KEY",
+  nil,
+  center: '48.8584,2.2945',
+  zoom: 14,
+  url_only: true
+)
+# => "https://maps.googleapis.com/maps/api/staticmap?key=YOUR_GOOGLE_API_KEY&size=1024x1024&scale=2&center=48.8584,2.2945&zoom=14"
 ```
 
-The response is the raw parsed response from the Google Static Maps API — typically image binary data or a redirect URL depending on your usage.
+The response is the raw parsed response from the Google Static Maps API — typically image binary data or a redirect URL depending on your usage. If `url_only: true` is passed, the response is just the constructed URL string.
 
 ## Options
 
@@ -41,6 +51,7 @@ The response is the raw parsed response from the Google Static Maps API — typi
 | `path` | Path styling options (weight, color, etc.) |
 | `location` | Hash of `lat`/`lng` to append to the path |
 | `markers` | Array of marker groups; each group is an array of coordinate strings |
+| `url_only` | If `true`, returns the full URL string instead of making an HTTP request |
 
 The default image size is `1024x1024` at scale `2`.
 

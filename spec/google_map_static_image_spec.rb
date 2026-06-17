@@ -145,6 +145,14 @@ RSpec.describe GoogleMapStaticImage do
       expect(WebMock).to have_requested(:get, static_map_url)
         .with(query: hash_including("size" => "1024x1024"))
     end
+
+    context "with url_only: true" do
+      it "returns the constructed URL without making an HTTP request" do
+        url = map.get_response(api_key, nil, center: "48.8584,2.2945", zoom: 14, url_only: true)
+        expect(url).to eq("#{static_map_url}?key=#{api_key}&size=1024x1024&scale=2&center=48.8584%2C2.2945&zoom=14")
+        expect(WebMock).not_to have_requested(:get, /.*/)
+      end
+    end
   end
 
   describe "ApiError" do
@@ -161,6 +169,90 @@ RSpec.describe GoogleMapStaticImage do
     it "includes status in the message" do
       error = GoogleMapStaticImage::ApiError.new(500, "Server Error")
       expect(error.message).to eq("Google Maps Static API error 500: Server Error")
+    end
+  end
+
+  describe "configuration" do
+    after do
+      GoogleMapStaticImage.configure do |c|
+        c.signing_secret = nil
+      end
+    end
+
+    it "allows configuring the signing secret globally" do
+      GoogleMapStaticImage.configure do |c|
+        c.signing_secret = "global_secret"
+      end
+      expect(GoogleMapStaticImage.configuration.signing_secret).to eq("global_secret")
+    end
+  end
+
+  describe "digital signatures" do
+    let(:secret) { "vodaW7inH256mF516598m2Fw=" }
+    let(:google_example_signature) { "N8Te_E-QyWk46Xs_XSsTlUlAAiA=" }
+    let(:expected_signature) { "t_9kvnGF7jCxECljbOFuDsVDpCQ=" }
+
+    after do
+      GoogleMapStaticImage.configure do |c|
+        c.signing_secret = nil
+      end
+    end
+
+    describe "URL signing helper" do
+      it "correctly signs a URL matching Google's example documentation" do
+        url = "https://maps.googleapis.com/maps/api/staticmap?center=40.714728,-73.998672&zoom=12&size=400x400&key=YOUR_API_KEY"
+        signed_url = map.send(:sign_url, url, secret)
+        expect(signed_url).to eq("#{url}&signature=#{google_example_signature}")
+      end
+    end
+
+    context "with global configuration" do
+      before do
+        GoogleMapStaticImage.configure do |c|
+          c.signing_secret = secret
+        end
+      end
+
+      it "appends the signature in url_only mode" do
+        url = map.get_response("YOUR_API_KEY", nil, center: "40.714728,-73.998672", zoom: 12, url_only: true)
+        expect(url).to include("signature=#{expected_signature}")
+      end
+
+      it "makes the HTTP request with the signature" do
+        stub_request(:get, /#{Regexp.escape(static_map_url)}/)
+          .to_return(status: 200, body: "IMAGE_DATA")
+
+        map.get_response("YOUR_API_KEY", nil, center: "40.714728,-73.998672", zoom: 12)
+
+        expect(WebMock).to have_requested(:get, /.*/)
+          .with(query: hash_including("signature" => expected_signature))
+      end
+    end
+
+    context "with per-request option" do
+      it "appends the signature in url_only mode" do
+        url = map.get_response("YOUR_API_KEY", nil, center: "40.714728,-73.998672", zoom: 12, url_only: true, signing_secret: secret)
+        expect(url).to include("signature=#{expected_signature}")
+      end
+
+      it "makes the HTTP request with the signature" do
+        stub_request(:get, /#{Regexp.escape(static_map_url)}/)
+          .to_return(status: 200, body: "IMAGE_DATA")
+
+        map.get_response("YOUR_API_KEY", nil, center: "40.714728,-73.998672", zoom: 12, signing_secret: secret)
+
+        expect(WebMock).to have_requested(:get, /.*/)
+          .with(query: hash_including("signature" => expected_signature))
+      end
+
+      it "prefers per-request secret over global secret" do
+        GoogleMapStaticImage.configure do |c|
+          c.signing_secret = "global_secret_which_is_different"
+        end
+
+        url = map.get_response("YOUR_API_KEY", nil, center: "40.714728,-73.998672", zoom: 12, url_only: true, signing_secret: secret)
+        expect(url).to include("signature=#{expected_signature}")
+      end
     end
   end
 end
