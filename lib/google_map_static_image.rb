@@ -29,6 +29,11 @@ class GoogleMapStaticImage
     end
     query[:markers] = option[:markers].map { |val| val.join("|") }            unless option[:markers].nil?
 
+    if option[:url_only]
+      request = HTTParty::Request.new(Net::HTTP::Get, STATIC_MAP_URL, query: query)
+      return request.uri.to_s
+    end
+
     response = HTTParty.get(STATIC_MAP_URL, query: query)
     raise ApiError.new(response.code, response.body) unless response.code == 200
     response.parsed_response

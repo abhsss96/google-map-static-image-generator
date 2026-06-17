@@ -145,6 +145,14 @@ RSpec.describe GoogleMapStaticImage do
       expect(WebMock).to have_requested(:get, static_map_url)
         .with(query: hash_including("size" => "1024x1024"))
     end
+
+    context "with url_only: true" do
+      it "returns the constructed URL without making an HTTP request" do
+        url = map.get_response(api_key, nil, center: "48.8584,2.2945", zoom: 14, url_only: true)
+        expect(url).to eq("#{static_map_url}?key=#{api_key}&size=1024x1024&scale=2&center=48.8584%2C2.2945&zoom=14")
+        expect(WebMock).not_to have_requested(:get, /.*/)
+      end
+    end
   end
 
   describe "ApiError" do
