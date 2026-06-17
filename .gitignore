@@ -1,0 +1,18 @@
+# Bundler and dependencies
+/.bundle/
+/vendor/
+/vendor/bundle/
+
+# Local configuration
+.env
+.env.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
