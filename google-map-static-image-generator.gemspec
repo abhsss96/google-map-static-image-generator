@@ -30,7 +30,8 @@ Gem::Specification.new do |spec|
     "homepage_uri"    => "https://github.com/abhsss96/google-map-static-image-generator",
     "source_code_uri" => "https://github.com/abhsss96/google-map-static-image-generator",
     "bug_tracker_uri" => "https://github.com/abhsss96/google-map-static-image-generator/issues",
-    "changelog_uri"   => "https://github.com/abhsss96/google-map-static-image-generator/releases"
+    "changelog_uri"   => "https://github.com/abhsss96/google-map-static-image-generator/releases",
+    "tags"            => "google-maps, static-maps, maps-api, image-generation, map-thumbnail, geolocation, httparty, rails"
   }
 
   spec.files         = Dir["lib/**/*", "README.md", "*.gemspec"]
