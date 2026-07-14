@@ -115,6 +115,29 @@ RSpec.describe GoogleMapStaticImage do
       end
     end
 
+    context "with image format option" do
+      before do
+        stub_request(:get, static_map_url)
+          .with(query: hash_including({}))
+          .to_return(status: 200, body: "IMAGE", headers: {})
+      end
+
+      %w[png png8 png32 gif jpg jpg-baseline].each do |format|
+        it "accepts #{format}" do  
+          map.get_response(api_key, nil, format: format)
+
+          expect(WebMock).to have_requested(:get, static_map_url)
+            .with(query: hash_including("format" => format))
+        end
+      end
+
+      it "ignores an invalid format" do
+        map.get_response(api_key, nil, format: "invalid")
+        expect(WebMock).not_to have_requested(:get, static_map_url)
+          .with(query: hash_including("format" => anything))
+      end
+    end
+
     context "when the API returns a non-200 response" do
       before do
         stub_request(:get, static_map_url)
