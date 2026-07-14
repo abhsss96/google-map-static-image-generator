@@ -1,8 +1,11 @@
 # google-map-static-image-generator
 
+[![Gem Version](https://img.shields.io/gem/v/google-map-static-image-generator?logo=rubygems)](https://rubygems.org/gems/google-map-static-image-generator)
 [![Gem Downloads](https://img.shields.io/gem/dt/google-map-static-image-generator)](https://rubygems.org/gems/google-map-static-image-generator)
 
 A Ruby gem that wraps the [Google Maps Static API](https://developers.google.com/maps/documentation/maps-static/overview) to generate customizable static map images in Rails applications.
+
+**Tags:** google-maps, static-maps, maps-api, image-generation, map-thumbnail, geolocation, httparty, rails
 
 ## Installation
 
