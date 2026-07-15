@@ -27,7 +27,27 @@ class GoogleMapStaticImage
     unless option[:location].nil?
       query[:path] = [query[:path], option[:location].map { |_k, v| v.to_s }.join("|")].join("|")
     end
-    query[:markers] = option[:markers].map { |val| val.join("|") }            unless option[:markers].nil?
+    unless option[:markers].nil?
+      option[:markers].each do |marker_group|
+        marker_group.each do |item|
+          next if item.include?(":")
+
+          parts = item.split(",")
+          raise ArgumentError, "Malformed coordinate string: #{item}" unless parts.size == 2
+
+          begin
+            lat = Float(parts[0])
+            lng = Float(parts[1])
+          rescue ArgumentError
+            raise ArgumentError, "Malformed coordinate string: #{item}"
+          end
+
+          raise ArgumentError, "Latitude out of bounds: #{lat}" unless lat.between?(-90.0, 90.0)
+          raise ArgumentError, "Longitude out of bounds: #{lng}" unless lng.between?(-180.0, 180.0)
+        end
+      end
+      query[:markers] = option[:markers].map { |val| val.join("|") }
+    end
 
     response = HTTParty.get(STATIC_MAP_URL, query: query)
     raise ApiError.new(response.code, response.body) unless response.code == 200

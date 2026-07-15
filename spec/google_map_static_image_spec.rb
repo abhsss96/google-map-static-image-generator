@@ -33,9 +33,27 @@ RSpec.describe GoogleMapStaticImage do
       end
 
       it "includes markers in the query" do
-        map.get_response(api_key, nil, markers: [["48.8584,2.2945", "48.8606,2.3376"]])
+        map.get_response(api_key, nil, markers: [["color:red", "48.8584,2.2945", "48.8606,2.3376"]])
         expect(WebMock).to have_requested(:get, static_map_url)
           .with(query: hash_including("key" => api_key))
+      end
+
+      it "raises ArgumentError for malformed coordinates" do
+        expect {
+          map.get_response(api_key, nil, markers: [["48.8584,2.2945", "malformed,coord"]])
+        }.to raise_error(ArgumentError, /Malformed coordinate string/)
+      end
+
+      it "raises ArgumentError for out of bounds latitude" do
+        expect {
+          map.get_response(api_key, nil, markers: [["100.0,2.2945"]])
+        }.to raise_error(ArgumentError, /Latitude out of bounds/)
+      end
+
+      it "raises ArgumentError for out of bounds longitude" do
+        expect {
+          map.get_response(api_key, nil, markers: [["48.8584,200.0"]])
+        }.to raise_error(ArgumentError, /Longitude out of bounds/)
       end
     end
 
